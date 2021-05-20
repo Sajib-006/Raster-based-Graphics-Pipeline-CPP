@@ -37,6 +37,10 @@ void printPoint3D(struct Point3D p)
 {
     printf("%f %f %f\n",p.arr[0],p.arr[1],p.arr[2]);
 }
+void printVector(struct Vector v)
+{
+    printf("%f %f %f %f\n",v.x,v.y,v.z,v.w);
+}
 void printMatrix(struct Matrix m)
 {
     for(int i=0; i<4; i++){
@@ -145,27 +149,33 @@ struct Matrix genScaleMatrix(double x, double y, double z)
 struct Vector RotationUtil(struct Vector v, struct Vector a, double angle)
 {
     struct Vector v1,v2,v3,res;
-    v1 = ScalarVectorMul(cos(angle),v);
-    double val = (a.x*v.x + a.y*v.y + a.z*v.z)*(1-cos(angle));
-    v2 = ScalarVectorMul(val,a);
     v3.x = a.y*v.z - a.z*v.y;
     v3.y = a.z*v.x - a.x*v.z;
     v3.z = a.x*v.y - a.y*v.x;
+    v3 = ScalarVectorMul(sin(angle),v3);
+
+    if(angle<0.0) angle*=-1;
+    v1 = ScalarVectorMul(cos(angle),v);
+    double val = (a.x*v.x + a.y*v.y + a.z*v.z)*(1.0-cos(angle));
+    v2 = ScalarVectorMul(val,a);
+
     res.x = v1.x + v2.x + v3.x;
     res.y = v1.y + v2.y + v3.y;
     res.z = v1.z + v2.z + v3.z;
     if(res.x>-0.001 && res.x<0.0) res.x = 0.0;
     if(res.y>-0.001 && res.y<0.0) res.y = 0.0;
     if(res.z>-0.001 && res.z<0.0) res.z = 0.0;
+
+
     return res;
 }
 struct Matrix genRotationMatrix(double angle, struct Vector a)
 {
     struct Vector i,j,k,c1,c2,c3;
     struct Matrix res;
-    i.x = 1;
-    j.y = 1;
-    k.z = 1;
+    i.x = 1.0;
+    j.y = 1.0;
+    k.z = 1.0;
     c1 = RotationUtil(i,a,angle);
     c2 = RotationUtil(j,a,angle);
     c3 = RotationUtil(k,a,angle);
@@ -185,25 +195,23 @@ struct Matrix genRotationMatrix(double angle, struct Vector a)
 
 int main()
 {
-    cout<<"Hello"<<endl;
     struct Matrix identity_matrix = genIdentityMatrix();
-    printMatrix(identity_matrix);
+    //printMatrix(identity_matrix);
     s.push(identity_matrix);
-    ifstream fin( "3/scene.txt" );
+    ifstream fin( "4/scene.txt" );
 
     fin >> eye.x >> eye.y >> eye.z;
     fin >> look.x >> look.y >> look.z;
     fin >> up.x >> up.y >> up.z;
     fin >> fovY >> aspectRatio >> near >> far;
 
-    printPoint(eye);
-    //while(getline( fin, line ))
+    //printPoint(eye);
     string command;
     while(true)
     {
         fin >> command;
         if(command == "triangle"){
-           cout<<"Triangle"<<endl;
+           //cout<<"Triangle"<<endl;
            struct Matrix triangle = initializeMatrix();
            Point3D p1,p2,p3;
            for(int i=0; i<3; i++) fin>> p1.arr[i];
@@ -211,17 +219,17 @@ int main()
            for(int i=0; i<3; i++) fin>> p3.arr[i];
            p1.arr[3] = p2.arr[3] = p3.arr[3] = 1;
 
-           //printMatrix(s.top());
-           //for(int i=0;i<command_stack.size();i++) cout<<command_stack[i]<<" ";
-           printf("\nPrinting Transformed Point\n");
+           //printf("\nPrinting Transformed Point\n");
+
            printPoint3D(matrixPointMul(s.top(),p1));
            printPoint3D(matrixPointMul(s.top(),p2));
            printPoint3D(matrixPointMul(s.top(),p3));
+           cout<<endl;
 
         }
         else if(command == "translate"){
             command_stack.push("T");
-            cout<<"Trans"<<endl;
+            //cout<<"Trans"<<endl;
             double x,y,z;
             fin>> x >> y >> z;
             struct Matrix T = genTranslationMatrix(x,y,z);
@@ -229,7 +237,7 @@ int main()
         }
         else if(command == "scale"){
             command_stack.push("S");
-            cout<<"S"<<endl;
+            //cout<<"S"<<endl;
             double x,y,z;
             fin>> x >> y >> z;
             struct Matrix T = genScaleMatrix(x,y,z);
@@ -237,24 +245,24 @@ int main()
         }
         else if(command == "rotate"){
             command_stack.push("R");
-            cout<<"R"<<endl;
+            //cout<<"R"<<endl;
             struct Vector a;
             double angle;
             double pi = 22.0/7;
             fin>> angle >> a.x >> a.y >> a.z;
             a = normalize(a);
-            if(angle<0.0) angle*=-1;
-            cout<<"angle: "<<angle<<endl;
+
+            //cout<<"angle: "<<angle<<endl;
             struct Matrix R = genRotationMatrix(angle*pi/180.0,a);
-            printMatrix(R);
+            //printMatrix(R);
             s.push(matrixMultiplication(s.top(),R));
         }
         else if(command == "push"){
             command_stack.push("push");
-            cout<<"Push"<<endl;
+            //cout<<"Push"<<endl;
         }
         else if(command == "pop"){
-            cout<<"pop"<<endl;
+            //cout<<"pop"<<endl;
             while(command_stack.top()!="push"){
                 command_stack.pop();
                 s.pop();
