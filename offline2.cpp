@@ -22,20 +22,30 @@ struct Matrix
     double w1 = 0.0, w2 = 0.0, w3 = 0.0, w4 = 1.0;*/
     double arr[4][4];
 };
+double pi = 3.1416;
+int triangle_cnt = 0;
 stack<Matrix> s;
 stack<string> command_stack;
-struct Point eye;
+/*struct Point eye;
 struct Point look;
-struct Point up;
+struct Point up;*/
+struct Vector eye,look,up;
 double fovY, aspectRatio, near, far;
 
 void printPoint(struct Point p)
 {
     printf("%f %f %f %f\n",p.x,p.y,p.z,p.w);
 }
-void printPoint3D(struct Point3D p)
+void printPoint3D(struct Point3D p,ofstream& fout)
 {
-    printf("%f %f %f\n",p.arr[0],p.arr[1],p.arr[2]);
+    if(p.arr[3]!=1){
+        p.arr[0]/=p.arr[3];
+        p.arr[1]/=p.arr[3];
+        p.arr[2]/=p.arr[3];
+        p.arr[3]/=p.arr[3];
+    }
+    printf("%f %f %f %f\n",p.arr[0],p.arr[1],p.arr[2],p.arr[3]);
+    fout <<p.arr[0]<<" "<<p.arr[1]<<" "<<p.arr[2]<<endl;
 }
 void printVector(struct Vector v)
 {
@@ -95,17 +105,6 @@ struct Vector ScalarVectorMul(double scalar, struct Vector v)
     v1.z = scalar * v.z;
     return v1;
 }
-struct Matrix ScalarMatrixMul(double scalar, struct Matrix m)
-{
-    struct Matrix m1;
-    //for(int i=0; i<)
-}
-struct Matrix CrossMultiplication(struct Matrix m, struct Vector v)
-{
-
-
-
-}
 
 struct Vector normalize(struct Vector a)
 {
@@ -123,6 +122,33 @@ struct Matrix genIdentityMatrix()
             if(i==j) m.arr[i][j] = 1.0;
             else m.arr[i][j] = 0.0;
     return m;
+}
+struct Vector VecCrossMul(struct Vector a, struct Vector b)
+{
+    struct Vector res;
+    res.x = a.y * b.z - a.z * b.y;
+    res.y = a.z * b.x - a.x * b.z;
+    res.z = a.x * b.y - a.y * b.x;
+    res.w = 1;
+    return res;
+}
+struct Vector VecSub(struct Vector a, struct Vector b)
+{
+    struct Vector res;
+    res.x = a.x - b.x;
+    res.y = a.y - b.y;
+    res.z = a.z - b.z;
+    res.w = 1;
+    return res;
+}
+struct Vector VecAdd(struct Vector a, struct Vector b)
+{
+    struct Vector res;
+    res.x = a.x + b.x;
+    res.y = a.y + b.y;
+    res.z = a.z + b.z;
+    res.w = 1;
+    return res;
 }
 struct Matrix genTranslationMatrix(double x, double y, double z)
 {
@@ -192,39 +218,34 @@ struct Matrix genRotationMatrix(double angle, struct Vector a)
     res.arr[0][3] = res.arr[1][3] = res.arr[2][3] = res.arr[3][0] = res.arr[3][1] = res.arr[3][2] = 0;
     return res;
 }
-
-int main()
+void modeling_transformation(ifstream& fin, ofstream& fout)
 {
     struct Matrix identity_matrix = genIdentityMatrix();
-    //printMatrix(identity_matrix);
     s.push(identity_matrix);
-    ifstream fin( "4/scene.txt" );
 
     fin >> eye.x >> eye.y >> eye.z;
     fin >> look.x >> look.y >> look.z;
     fin >> up.x >> up.y >> up.z;
     fin >> fovY >> aspectRatio >> near >> far;
 
-    //printPoint(eye);
+    cout<<"Stage1 output\n--------------\n";
     string command;
     while(true)
     {
         fin >> command;
         if(command == "triangle"){
-           //cout<<"Triangle"<<endl;
-           struct Matrix triangle = initializeMatrix();
+           triangle_cnt++;
            Point3D p1,p2,p3;
            for(int i=0; i<3; i++) fin>> p1.arr[i];
            for(int i=0; i<3; i++) fin>> p2.arr[i];
            for(int i=0; i<3; i++) fin>> p3.arr[i];
            p1.arr[3] = p2.arr[3] = p3.arr[3] = 1;
 
-           //printf("\nPrinting Transformed Point\n");
-
-           printPoint3D(matrixPointMul(s.top(),p1));
-           printPoint3D(matrixPointMul(s.top(),p2));
-           printPoint3D(matrixPointMul(s.top(),p3));
+           printPoint3D(matrixPointMul(s.top(),p1),fout);
+           printPoint3D(matrixPointMul(s.top(),p2),fout);
+           printPoint3D(matrixPointMul(s.top(),p3),fout);
            cout<<endl;
+           fout<<endl;
 
         }
         else if(command == "translate"){
@@ -248,7 +269,7 @@ int main()
             //cout<<"R"<<endl;
             struct Vector a;
             double angle;
-            double pi = 22.0/7;
+
             fin>> angle >> a.x >> a.y >> a.z;
             a = normalize(a);
 
@@ -271,5 +292,116 @@ int main()
         }
         else if(command == "end") break;
     }
+    fin.close();
+    fout.close();
+}
 
+struct Matrix view_transformation_util()
+{
+    struct Vector l,r,u;
+    struct Matrix V, R, T;
+
+    l = VecSub(look,eye);
+    l = normalize(l);
+    r = VecCrossMul(l,up);
+    r = normalize(r);
+    u = VecCrossMul(r,l);
+
+    T = genIdentityMatrix();
+    T.arr[0][3] = - eye.x;
+    T.arr[1][3] = - eye.y;
+    T.arr[2][3] = - eye.z;
+
+    R = initializeMatrix();
+    R.arr[0][0] = r.x;
+    R.arr[0][1] = r.y;
+    R.arr[0][2] = r.z;
+    R.arr[1][0] = u.x;
+    R.arr[1][1] = u.y;
+    R.arr[1][2] = u.z;
+    R.arr[2][0] = -l.x;
+    R.arr[2][1] = -l.y;
+    R.arr[2][2] = -l.z;
+    V = matrixMultiplication(R,T);
+    return V;
+}
+void view_transformation(ifstream& fin, ofstream& fout)
+{
+    int cnt;
+    struct Matrix V;
+    V = view_transformation_util();
+    cout<<"Stage2 output\n--------------\n";
+    cnt = triangle_cnt;
+    //cout<<triangle_cnt<<endl;
+    while(cnt--)
+    {
+        //cout<<cnt<<endl;
+       Point3D p1,p2,p3;
+       for(int i=0; i<3; i++) fin>> p1.arr[i];
+       for(int i=0; i<3; i++) fin>> p2.arr[i];
+       for(int i=0; i<3; i++) fin>> p3.arr[i];
+       p1.arr[3] = p2.arr[3] = p3.arr[3] = 1;
+
+       printPoint3D(matrixPointMul(V,p1),fout);
+       printPoint3D(matrixPointMul(V,p2),fout);
+       printPoint3D(matrixPointMul(V,p3),fout);
+       cout<<endl;
+       fout<<endl;
+    }
+    fin.close();
+    fout.close();
+
+}
+struct Matrix project_transformation_util()
+{
+    double fovX,t,r;
+    struct Matrix P;
+    fovX = fovY * aspectRatio;
+    t = near * tan(fovY/2.0*pi/180.0);
+    r = near * tan(fovX/2.0*pi/180.0);
+    P = initializeMatrix();
+    P.arr[0][0] = near/r;
+    P.arr[1][1] = near/t;
+    P.arr[2][2] = -(far+near)/(far-near);
+    P.arr[2][3] = -(2*far*near)/(far-near);
+    P.arr[3][2] = -1;
+    return P;
+
+}
+void project_transformation(ifstream& fin, ofstream& fout)
+{
+    int cnt;
+    struct Matrix P;
+    P = project_transformation_util();
+    cout<<"Stage3 output\n--------------\n";
+    cnt = triangle_cnt;
+    while(cnt--)
+    {
+       Point3D p1,p2,p3;
+       for(int i=0; i<3; i++) fin>> p1.arr[i];
+       for(int i=0; i<3; i++) fin>> p2.arr[i];
+       for(int i=0; i<3; i++) fin>> p3.arr[i];
+       p1.arr[3] = p2.arr[3] = p3.arr[3] = 1;
+
+       printPoint3D(matrixPointMul(P,p1),fout);
+       printPoint3D(matrixPointMul(P,p2),fout);
+       printPoint3D(matrixPointMul(P,p3),fout);
+       cout<<endl;
+       fout<<endl;
+    }
+    fin.close();
+    fout.close();
+}
+int main()
+{
+    ifstream fin1( "4/scene.txt" );
+    ofstream fout1("4_out/stage1.txt");
+    ifstream fin2("4_out/stage1.txt");
+    ofstream fout2("4_out/stage2.txt");
+    ifstream fin3("4_out/stage2.txt");
+    ofstream fout3("4_out/stage3.txt");
+
+    modeling_transformation(fin1,fout1);
+    view_transformation(fin2,fout2);
+    project_transformation(fin3,fout3);
 }
