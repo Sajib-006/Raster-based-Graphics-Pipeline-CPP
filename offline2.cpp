@@ -1,4 +1,5 @@
 #include<bits/stdc++.H>
+#include "bitmap_image.hpp"
 
 using namespace std;
 
@@ -22,6 +23,7 @@ struct Matrix
     double w1 = 0.0, w2 = 0.0, w3 = 0.0, w4 = 1.0;*/
     double arr[4][4];
 };
+
 double pi = 3.1416;
 int triangle_cnt = 0;
 stack<Matrix> s;
@@ -31,6 +33,7 @@ struct Point look;
 struct Point up;*/
 struct Vector eye,look,up;
 double fovY, aspectRatio, near, far;
+
 
 void printPoint(struct Point p)
 {
@@ -392,6 +395,19 @@ void project_transformation(ifstream& fin, ofstream& fout)
     fin.close();
     fout.close();
 }
+void scan_conversion(ifstream& fin4, ifstream& config, ofstream& fout4)
+{
+    double screen_width, screen_height;
+    double neg_x_limit, pos_x_limit, bottom_y_limit, top_y_limit, front_z_limit, rear_z_limit;
+    // read config file
+    config >> screen_width >> screen_height;
+    config >> neg_x_limit >> pos_x_limit;
+    config >> bottom_y_limit >> top_y_limit;
+    config >> front_z_limit >> rear_z_limit;
+    cout<< front_z_limit<< rear_z_limit<<endl;
+
+
+}
 int main()
 {
     ifstream fin1( "4/scene.txt" );
@@ -400,8 +416,12 @@ int main()
     ofstream fout2("4_out/stage2.txt");
     ifstream fin3("4_out/stage2.txt");
     ofstream fout3("4_out/stage3.txt");
+    ifstream fin4("4_out/stage3.txt");
+    ofstream fout4("4_out/z_buffer.txt");
+    ifstream config("4/config.txt");
 
     modeling_transformation(fin1,fout1);
     view_transformation(fin2,fout2);
     project_transformation(fin3,fout3);
+    scan_conversion(fin4,config,fout4);
 }
