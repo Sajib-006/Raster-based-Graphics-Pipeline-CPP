@@ -464,7 +464,7 @@ double calculate_z_value(struct Triangle t, double ys, double xa, double xb, dou
     return zp;
 
 }
-/*double calculate_z_value(struct Triangle t, double ys, double xa, double xb, double xp)
+double calculate_z_val(struct Triangle t, double ys, double xa, double xb, double xp)
 {
     double z1,z2,z3,y1,y2,y3,za,zb,zp;
     double z1a,z2a,z3a,y1a,y2a,y3a;
@@ -548,7 +548,7 @@ double calculate_z_value(struct Triangle t, double ys, double xa, double xb, dou
     zp = zb - ((zb - za)*(xb - xp)/(xb - xa));
     return zp;
 
-}*/
+}
 void scan_conversion(ifstream& fin, ifstream& config, ofstream& fout)
 {
     double screen_width, screen_height;
@@ -715,7 +715,7 @@ void scan_conversion(ifstream& fin, ifstream& config, ofstream& fout)
             }//end col-loop
         }//end row-loop
     }//end triangle-loop
-    image.save_image("4_out/output.bmp");;
+    image.save_image("output.bmp");;
     cout<<"done"<<endl;
     for(int i=0; i<screen_width; i++){
         for(int j=0; j<screen_height; j++){
@@ -740,16 +740,18 @@ void scan_conversion(ifstream& fin, ifstream& config, ofstream& fout)
 }
 int main()
 {
-    ifstream fin1( "4/scene.txt" );
-    ifstream config("4/config.txt");
+    ifstream fin1( "1/scene.txt" );
+    ofstream fout1("stage1.txt");
 
-    ofstream fout1("4_out/stage1.txt");
-    ifstream fin2("4_out/stage1.txt");
-    ofstream fout2("4_out/stage2.txt");
-    ifstream fin3("4_out/stage2.txt");
-    ofstream fout3("4_out/stage3.txt");
-    ifstream fin4("4/stage3.txt");
-    ofstream fout4("4_out/z_buffer.txt");
+    ifstream fin2("stage1.txt");
+    ofstream fout2("stage2.txt");
+
+    ifstream fin3("stage2.txt");
+    ofstream fout3("stage3.txt");
+
+    ifstream config("1/config.txt");
+    ifstream fin4("stage3.txt");
+    ofstream fout4("z_buffer.txt");
 
 
     modeling_transformation(fin1,fout1);
